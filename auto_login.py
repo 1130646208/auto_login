@@ -2,6 +2,7 @@ import requests
 import tkinter as tk
 import os
 import json
+import threading
 
 url = 'http://202.204.48.66/drcom/login?callback=dr1004&DDDDD={}&upass={}&0MKKey=123456&R1=0&R2=&R3=0&R6=0&para=00&terminal_type=1&lang=zh-cn&jsVersion=4.1&v=974&lang=zh'
 headers = {
@@ -33,11 +34,12 @@ def get_pass():
 window = tk.Tk()
 window.title('LOGIN V1.0')
 
-window.geometry('250x120')
+window.geometry('240x120')
 tk.Label(window, text='账户：').grid(row=0,column=0)
 tk.Label(window, text='密码：').grid(row=1,column=0)
 var_status = tk.StringVar(value='')
 lable1 = tk.Label(window, textvariable=var_status, height=1, width=15, bg='blue', fg='white').grid(row=3,column=1, columnspan=2)
+label2 = tk.Label(window, textvariable='', height=3, width=1, bg='green', fg='white').grid(row=0,column=3, rowspan=2)
 
 
 var_usr_name = tk.StringVar()
@@ -66,19 +68,26 @@ def login():
     if not uname or not upass:
         pass
     else:
-        r = requests.get(url.format(uname, upass), headers=headers)
-        print(r.text[12:-4])
+        try:
+            r = requests.get(url.format(uname, upass), headers=headers)
+            print(r.text[12:-4])
     
-        if r.status_code == 200:
-            response_json = json.loads(r.text[12:-4])
-            if response_json.get('result') == 1:      
-                save_pass(var_usr_name.get(), var_usr_pwd.get())
-                var_status.set('登陆成功')
+            if r.status_code == 200:
+                response_json = json.loads(r.text[12:-4])
+                if response_json.get('result') == 1:      
+                    save_pass(var_usr_name.get(), var_usr_pwd.get())
+                    var_status.set('登陆成功')
+                    return True
+                else:
+                    var_status.set('登陆失败')
+                    return False
             else:
                 var_status.set('登陆失败')
-        else:
+                return False
+        except Exception:
             var_status.set('登陆失败')
-    
+            return False
+        
 def usr_sign_quit():
     r = requests.get(url.format('666', '666'), headers=headers)
     print(r.text[12:-4])
@@ -87,10 +96,13 @@ def usr_sign_quit():
             if response_json.get('result') == 0:      
                 save_pass(var_usr_name.get(), var_usr_pwd.get())
                 var_status.set('注销成功')
+                return True
             else:
                 var_status.set('注销失败')
+                return False
     else:
         var_status.set('注销失败')
+        return False
     
 #登录 注册按钮
 bt_login = tk.Button(window,text='登录',command=login)
@@ -100,6 +112,8 @@ bt_logquit = tk.Button(window,text='注销',command=usr_sign_quit)
 bt_logquit.grid(row=2,column=2)
 
 
-if __name__ == '__main__':
-    window.mainloop()
+result = login()
+
+
+window.mainloop()
 
